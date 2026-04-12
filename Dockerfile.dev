@@ -1,0 +1,87 @@
+# ============================================================================
+# DEVELOPMENT DOCKERFILE - Hot-Reload Development
+# ============================================================================
+#
+# WHAT IS THIS?
+# - Development container for local coding/testing
+# - Single-stage build with all development tools
+# - Hot-reload: automatically restart on file changes
+#
+# WHEN IS THIS USED?
+# - Local development: docker-compose up -d
+# - Local testing before production deployment
+# - Debugging with source maps and dev tools
+#
+# HOW IT WORKS:
+# 1. Install ALL dependencies (dev + production)
+# 2. Copy source code
+# 3. Run with ts-node (TypeScript → JavaScript on-the-fly)
+# 4. Watch for file changes, auto-restart
+#
+# DEVELOPMENT FEATURES:
+# - Hot-reload: Edit code → instant restart
+# - Source maps: Debug TypeScript directly
+# - All dev tools: ESLint, Jest, ts-node, etc.
+# - Volume mounting: Source code lives outside container
+#
+# WHY DIFFERENT FROM PRODUCTION?
+# - Production: Multi-stage, compiled JS, minimal deps (~150MB)
+# - Development: Single-stage, TypeScript source, all tools (~500MB)
+# - Development prioritizes developer experience over size/security
+#
+# VOLUME MOUNTING (in docker-compose.yml):
+# - Source code mounted as volume (not copied into image)
+# - Changes in host filesystem instantly visible in container
+# - node_modules excluded from mount (installed inside container)
+#
+# ============================================================================
+
+# Use Node.js 18 Alpine (small, fast)
+FROM node:18-alpine
+
+# Install git (needed for some npm packages)
+RUN apk add --no-cache git
+
+# Create non-root user for development
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Change ownership to nodejs user
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Copy package files first (for better Docker layer caching)
+COPY --chown=nextjs:nodejs package*.json ./
+
+# Install ALL dependencies (including devDependencies)
+RUN npm install
+
+# Copy source code (in production this would be volume mounted)
+COPY --chown=nextjs:nodejs . .
+
+# Expose port
+EXPOSE 3000
+
+# Default command: development server with hot-reload
+CMD ["npm", "run", "dev"]
+
+# ============================================================================
+# DEVELOPMENT WORKFLOW:
+# ============================================================================
+#
+# 1. Build: docker-compose build api
+# 2. Run: docker-compose up -d
+# 3. Edit code in src/ (hot-reload automatically)
+# 4. Debug: Source maps work in VSCode debugger
+# 5. Test: npm test runs inside container
+# 6. Lint: npm run lint works with all dev tools
+#
+# Volume mounting in docker-compose.yml ensures:
+# - Code changes are instant (no rebuild needed)
+# - node_modules stays inside container (no conflicts)
+# - Source maps work for debugging
+#
+# ============================================================================

@@ -1,0 +1,101 @@
+{
+  "_comment": {
+    "description": "ESLint Configuration - When does this get used?",
+    "when_eslint_runs": [
+      "1. Developer runs: npm run lint (manual check)",
+      "2. Developer runs: npm run lint -- --fix (auto-fix issues)",
+      "3. IDE integration: VSCode/IDE shows red squiggles for violations",
+      "4. Pre-commit hook (if configured): Runs before git commit",
+      "5. CI/CD Pipeline: GitHub Actions/CodeBuild runs npm run lint before build",
+      "6. Watch mode: npm run lint -- --watch (continuous checking)"
+    ],
+    "common_commands": {
+      "check": "npm run lint                    # Check all files for violations",
+      "fix": "npm run lint -- --fix            # Auto-fix fixable issues",
+      "watch": "npm run lint -- --watch        # Watch mode for development",
+      "specific_file": "npm run lint src/index.ts  # Check specific file"
+    },
+    "what_it_checks": [
+      "Code style consistency",
+      "Unused variables",
+      "Missing function return types",
+      "Dangerous use of 'any' type",
+      "Naming conventions (camelCase, PascalCase, etc)",
+      "console.log usage (should use logger instead)",
+      "Incorrect TypeScript patterns"
+    ],
+    "pipeline_integration": {
+      "buildspec_yml": "AWS CodeBuild runs 'npm run lint' before 'npm run build'",
+      "local_development": "VSCode shows violations with squiggles (if ESLint extension installed)",
+      "pre_commit": "Can be configured in package.json with husky/lint-staged"
+    }
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "env": {
+    "node": true,
+    "es2021": true,
+    "jest": true
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "coverage",
+    "*.log"
+  ],
+  "rules": {
+    "@typescript-eslint/explicit-function-return-types": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/naming-convention": [
+      "warn",
+      {
+        "selector": "default",
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"]
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enumMember",
+        "format": ["UPPER_CASE"]
+      }
+    ],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
+}
+
+

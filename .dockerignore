@@ -1,0 +1,50 @@
+# ============================================================================
+# DOCKERIGNORE - Files/Directories Excluded from Docker Build
+# ============================================================================
+#
+# WHAT IS THIS?
+# - List of files/directories Docker should NOT copy to image
+# - Keeps Docker images smaller and builds faster
+# - Similar to .gitignore but for Docker
+#
+# WHY EXCLUDE THEM?
+# - node_modules: Will be reinstalled in container via npm install
+# - Source code (.ts, jest.config, tsconfig, .eslintrc): Not needed in production
+# - Git files: Version control not needed in production container
+# - Environment files (.env): Secrets should never be in Docker image
+# - Logs: Temporary files that build up, waste space
+#
+# ============================================================================
+
+# Dependencies (reinstalled via npm ci)
+node_modules
+npm-debug.log
+
+# Build artifacts (rebuilt from source in Dockerfile)
+dist
+
+# Source files (not needed in production Docker image)
+src
+
+# Configuration files (only needed for development/build)
+tsconfig.json
+jest.config.json
+.eslintrc.json
+
+# Version control (not needed in running container)
+.git
+.gitignore
+
+# Environment secrets (NEVER put in Docker image)
+.env
+.env.local
+.env.*.local
+
+# Development files (not needed in production)
+README.md
+BOILERPLATE.md
+
+# Logs (clean slate for each container)
+*.log
+logs/
+
