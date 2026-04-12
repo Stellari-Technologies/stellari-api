@@ -1,0 +1,172 @@
+# ============================================================================
+# DOCKER-COMPOSE.YML - Local Development Environment
+# ============================================================================
+#
+# WHAT IS THIS?
+# - Defines local development environment with PostgreSQL + API + pgAdmin
+# - Allows running the full stack locally with real database
+# - Isolated from your host machine's PostgreSQL
+#
+# WHEN IS THIS USED?
+#
+# 1. LOCAL DEVELOPMENT:
+#    - Developer: docker-compose up -d
+#    - PostgreSQL + API + pgAdmin start in containers
+#    - Hot-reload with ts-node (API watches for file changes)
+#    - API connects to containerized database
+#
+# 2. LOCAL TESTING:
+#    - Run tests against real PostgreSQL (not SQLite)
+#    - Test database migrations
+#    - Test multi-tenant data isolation
+#    - Test API-to-database integration
+#
+# 3. CI/CD LOCAL TESTING:
+#    - Test Docker image locally before pushing to ECR
+#    - Verify production build works
+#    - Debug container networking
+#
+# HOW TO USE:
+#
+# START ENVIRONMENT:
+#   docker-compose up -d          # Start all services in background
+#   # API: http://localhost:3000
+#   # pgAdmin: http://localhost:5050 (admin@admin.com / admin)
+#   # Database: localhost:5432
+#
+# STOP ENVIRONMENT:
+#   docker-compose down           # Stop and remove containers
+#
+# VIEW LOGS:
+#   docker-compose logs -f        # Follow logs from all services
+#   docker-compose logs postgres  # Logs from PostgreSQL only
+#   docker-compose logs api       # Logs from API only
+#
+# CONNECT TO DATABASE:
+#   docker-compose exec postgres psql -U postgres -d stellari_app
+#   # Or use pgAdmin at http://localhost:5050
+#
+# RESET DATABASE:
+#   docker-compose down -v        # Remove containers AND data volumes
+#   docker-compose up -d          # Fresh database
+#
+# REBUILD API (after Dockerfile.dev changes):
+#   docker-compose build api      # Rebuild API container
+#   docker-compose up -d          # Restart with new image
+#
+# SERVICES:
+#
+# postgres:
+#   - Image: postgres:15-alpine (lightweight)
+#   - Port: 5432 (exposed to host for debugging)
+#   - Database: stellari_app
+#   - User: postgres
+#   - Password: postgres
+#   - Data persists in Docker volume
+#   - Health check ensures database is ready
+#
+# api:
+#   - Built from: Dockerfile.dev (development image with ts-node)
+#   - Port: 3000 (exposed to host)
+#   - Hot-reload: watches source files, restarts automatically
+#   - Volume mount: source code mounted (not copied) for live editing
+#   - Depends on postgres: waits for database to be healthy
+#   - Command: npm run dev (starts with ts-node)
+#
+# pgadmin:
+#   - Web-based PostgreSQL admin interface
+#   - Port: 5050
+#   - Login: admin@admin.com / admin
+#   - Pre-configured to connect to postgres service
+#
+# WHY NOT PRODUCTION?
+#   - No secrets management (passwords in plain text)
+#   - No high availability
+#   - No backups
+#   - No load balancing
+#   - Single containers (not scalable)
+#   - For production: Use AWS ECS + RDS PostgreSQL
+#
+# DEVELOPMENT WORKFLOW:
+#
+# 1. Start: docker-compose up -d
+# 2. Edit code in src/ (hot-reload automatically)
+# 3. Test API at http://localhost:3000
+# 4. Manage DB at http://localhost:5050
+# 5. Check logs: docker-compose logs -f api
+# 6. Debug database: docker-compose exec postgres psql -U postgres -d stellari_app
+# 7. Stop: docker-compose down
+#
+# ============================================================================
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: stellari-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stellari_app
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stellari-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: stellari-api
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: stellari_app
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+    networks:
+      - stellari-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: stellari-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - stellari-network
+
+networks:
+  stellari-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

@@ -1,0 +1,131 @@
+{
+  // ============================================================================
+  // TYPESCRIPT CONFIGURATION - Node.js Express API
+  // ============================================================================
+  //
+  // WHAT IS THIS FILE?
+  // - TypeScript compiler configuration
+  // - Controls how .ts files are compiled to .js
+  // - Defines strict type checking and module resolution
+  //
+  // WHY THESE SETTINGS?
+  // - Optimized for Node.js runtime (not browser)
+  // - Strict mode for type safety
+  // - TypeORM decorators support
+  // - Modern JavaScript features with Node.js compatibility
+  //
+  // ============================================================================
+
+  "compilerOptions": {
+    // TARGET: JavaScript version to compile to
+    // - ES2020: Modern JS with async/await, optional chaining
+    // - Compatible with Node.js 18+ (our runtime)
+    // - Balances modern features with runtime support
+    "target": "ES2020",
+
+    // MODULE: Node.js-aware module emit strategy
+    // - Node16: Aligns with modern Node module behavior
+    // - Keeps CommonJS behavior by default unless package type is ESM
+    // - Compatible with current and future TypeScript versions
+    "module": "Node16",
+
+    // LIB: TypeScript type definitions to include
+    // - ES2020: Core JavaScript APIs (Array, Promise, etc.)
+    // - No DOM types (we're server-side, not browser)
+    // - Keeps bundle size small and relevant
+    "lib": ["ES2020"],
+
+    // OUTDIR: Where compiled JavaScript goes
+    // - ./dist: Clean output directory
+    // - Separate from source code (src/)
+    // - Easy to .gitignore and deploy
+    "outDir": "./dist",
+
+    // ROOTDIR: Source TypeScript directory
+    // - ./src: All our TypeScript source code
+    // - Compiler preserves this folder structure in dist/
+    "rootDir": "./src",
+
+    // STRICT: Enable all strict type checking
+    // - Catches more errors at compile time
+    // - Prevents runtime bugs from type issues
+    // - Essential for production code quality
+    "strict": true,
+
+    // EXPERIMENTAL DECORATORS: Enable @decorators
+    // - Required for TypeORM entity decorators
+    // - @Entity(), @Column(), @PrimaryGeneratedColumn(), etc.
+    // - Modern decorator syntax (stage 3 proposal)
+    "experimentalDecorators": true,
+
+    // EMIT DECORATOR METADATA: Runtime decorator info
+    // - TypeORM needs this for reflection
+    // - Allows runtime type inspection
+    // - Required for advanced ORM features
+    "emitDecoratorMetadata": true,
+
+    // ES MODULE INTEROP: CommonJS/ESM compatibility
+    // - Allows importing CommonJS modules in TypeScript
+    // - Fixes issues with libraries using default exports
+    // - Smooths over module system differences
+    "esModuleInterop": true,
+
+    // SKIP LIB CHECK: Skip type checking of .d.ts files
+    // - Faster compilation (don't check node_modules types)
+    // - Reduces build time significantly
+    // - Safe because we trust npm package types
+    "skipLibCheck": true,
+
+    // FORCE CONSISTENT CASING: Case-sensitive file paths
+    // - Prevents Windows/macOS case sensitivity issues
+    // - Ensures imports work across different OS
+    // - TypeScript enforces consistent casing
+    "forceConsistentCasingInFileNames": true,
+
+    // RESOLVE JSON MODULES: Import JSON files
+    // - Allows: import config from './config.json'
+    // - Useful for configuration files
+    // - TypeScript provides type safety
+    "resolveJsonModule": true,
+
+    // MODULE RESOLUTION: How to find modules
+    // - node16: Modern Node.js resolution (replaces deprecated node/node10)
+    // - Matches runtime module loading for current Node versions
+    // - Avoids TypeScript deprecation errors
+    "moduleResolution": "node16",
+
+    // ALLOW SYNTHETIC DEFAULT IMPORTS: Default import syntax
+    // - Allows: import express from 'express'
+    // - Even when module doesn't have real default export
+    // - Works with esModuleInterop for compatibility
+    "allowSyntheticDefaultImports": true
+  },
+
+  // INCLUDE: Which files to compile
+  // - src/**/*: All files in src/ directory recursively
+  // - Only our application code, not tests or config
+  "include": ["src/**/*"],
+
+  // EXCLUDE: Which files/directories to ignore
+  // - node_modules: Dependencies (already compiled)
+  // - dist: Output directory (would cause circular compilation)
+  // - Keeps compilation focused and fast
+  "exclude": ["node_modules", "dist"]
+
+  // ============================================================================
+  // COMPILATION WORKFLOW:
+  // ============================================================================
+  //
+  // 1. TypeScript Compiler (tsc) reads this config
+  // 2. Processes all .ts files in src/
+  // 3. Applies strict type checking
+  // 4. Outputs JavaScript to dist/
+  // 5. Preserves source directory structure
+  //
+  // Build Commands:
+  // - npm run build    → tsc (compile to dist/)
+  // - npm run dev      → ts-node (run without compiling)
+  // - npm start        → node dist/index.js (production)
+  //
+  // ============================================================================
+}

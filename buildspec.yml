@@ -1,0 +1,153 @@
+# ============================================================================
+# BUILDSPEC.YML - AWS CodeBuild Configuration
+# ============================================================================
+#
+# WHAT IS THIS?
+# - Configuration file for AWS CodeBuild (CI/CD build service)
+# - Defines steps to compile, test, and deploy your application
+# - Runs automatically when code is pushed to GitHub/CodeCommit
+#
+# WHEN DOES THIS RUN?
+#
+# AWS CodePipeline Flow:
+#   1. Developer: git push code to GitHub/CodeCommit
+#   2. CodePipeline triggered automatically
+#   3. CodePipeline → CodeBuild (this file runs)
+#   4. If build succeeds → CodeBuild pushes Docker image to ECR
+#   5. CodePipeline → ECS (deploys new image)
+#   6. User traffic routed to new ECS task
+#
+# BUILD PHASES:
+#
+# pre_build:
+#   - Install dependencies (npm ci)
+#   - Run linting checks
+#   - Fail early if code quality issues
+#
+# build:
+#   - Compile TypeScript to JavaScript
+#   - Run tests (Jest)
+#   - Build Docker image
+#   - Push image to AWS ECR (container registry)
+#   - Generate imagedefinitions.json for ECS
+#
+# post_build:
+#   - Run after build completes (success or failure)
+#   - Cleanup or notifications
+#
+# HOW TO CONFIGURE:
+#
+# 1. Set AWS_ACCOUNT_ID in env section:
+#    aws sts get-caller-identity --query Account --output text
+#
+# 2. Update IMAGE_REPO_NAME to your ECR repository name:
+#    ImageRepoName: stellari-api (should match ECR repo)
+#
+# 3. In CodePipeline, set environment variables:
+#    AWS_ACCOUNT_ID: your-account-id (from above)
+#    IMAGE_REPO_NAME: stellari-api
+#
+# ENVIRONMENT VARIABLES:
+#
+# From CodePipeline/CodeBuild console:
+#   AWS_ACCOUNT_ID        → Your AWS account number (12 digits)
+#   IMAGE_REPO_NAME       → ECR repository name where image is pushed
+#
+# Built-in from CodeBuild:
+#   AWS_REGION            → e.g., us-east-1
+#   CODEBUILD_RESOLVED_SOURCE_VERSION → Git commit SHA (used for image tag)
+#
+# DOCKER IMAGE TAGGING:
+#
+# Two tags created for each image:
+#   latest              → Always latest build
+#   {commit-short-sha}  → Specific commit (immutable historical reference)
+#
+# Example:
+#   stellari-api:latest
+#   stellari-api:a1b2c3d
+#
+# This allows:
+#   - Rolling deployments (always use latest)
+#   - Rollback (deploy specific commit SHA)
+#   - Debug specific version
+#
+# IMAGEDEFINITIONS.JSON:
+#
+# Output file that tells ECS what Docker image to deploy:
+#   [
+#     {
+#       "name": "stellari-api",
+#       "imageUri": "123456789.dkr.ecr.us-east-1.amazonaws.com/stellari-api:a1b2c3d"
+#     }
+#   ]
+#
+# This is consumed by ECS deploy action in CodePipeline
+#
+# CACHE:
+#
+# node_modules cached between builds to speed up npm ci
+# Without cache: 30-40 seconds per build
+# With cache: 5-10 seconds per build
+#
+# ============================================================================
+
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== PRE-BUILD: Install & Validate ==="
+      - echo "Installing dependencies (npm ci)..."
+      - npm ci
+      - echo "Running linter (ESLint)..."
+      - npm run lint
+
+  build:
+    commands:
+      - echo "=== BUILD: Compile & Test ==="
+      - echo "Compiling TypeScript to JavaScript..."
+      - npm run build
+      - echo "Running tests (Jest)..."
+      - npm test
+
+      - echo "=== BUILD: Docker Image ==="
+      - echo "Authenticating with ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      
+      - echo "Building Docker image..."
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+
+      - echo "=== BUILD: Generate ECS Deploy Config ==="
+      - echo "Creating imagedefinitions.json for ECS deployment..."
+      - printf '[{"name":"stellari-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+
+  post_build:
+    commands:
+      - echo "=== POST-BUILD: Cleanup ==="
+      - echo "Build completed on `date`"
+      - echo "Image URI: $REPOSITORY_URI:$IMAGE_TAG"
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: BuildArtifact
+  discard-paths: yes
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+
+env:
+  variables:
+    IMAGE_REPO_NAME: "stellari-api"
+    AWS_ACCOUNT_ID: "1234567890"  # CHANGE THIS! Run: aws sts get-caller-identity --query Account --output text
+
