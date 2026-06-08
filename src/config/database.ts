@@ -127,6 +127,9 @@ import { TemplateItem } from "../entities/Template";
 import { User } from "../entities/User";
 import { Organization } from "../entities/Organization";
 import { OrganizationMembership } from "../entities/OrganizationMembership";
+import { ParticipantProfile } from "../entities/ParticipantProfile";
+import { Reward } from "../entities/Reward";
+import { Transaction } from "../entities/Transaction";
 
 /**
  * ENTITIES ARRAY
@@ -139,8 +142,15 @@ import { OrganizationMembership } from "../entities/OrganizationMembership";
  * 2. Add to array: const entities = [TemplateItem, User];
  * 3. Restart app - table auto-created in dev mode
  */
-const entities = [TemplateItem, User, Organization, OrganizationMembership];
-
+const entities = [
+  TemplateItem,
+  User,
+  Organization,
+  OrganizationMembership,
+  ParticipantProfile,
+  Reward,
+  Transaction,
+];
 /**
  * AppDataSource
  *
