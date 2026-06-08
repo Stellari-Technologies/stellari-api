@@ -23,10 +23,6 @@ export class Reward {
   @Generated("uuid")
   id!: string;
 
-  // Which org this reward belongs to
-  @Column("uuid")
-  organizationId!: string;
-
   @Column("varchar")
   title!: string;
 

@@ -18,10 +18,6 @@ export class ParticipantProfile {
   @Generated("uuid")
   id!: string;
 
-  // Direct link to org — participants don't go through OrganizationMembership
-  @Column("uuid")
-  organizationId!: string;
-
   // NULLABLE — participants have no Cognito account for MVP
   // filled in later when participants get their own accounts
   @Column("varchar", { nullable: true, unique: true })
