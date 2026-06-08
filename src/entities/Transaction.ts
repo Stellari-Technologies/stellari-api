@@ -22,14 +22,6 @@ export class Transaction {
   @Generated("uuid")
   id!: string;
 
-  // Which participant this transaction belongs to
-  @Column("uuid")
-  participantProfileId!: string;
-
-  // Which reward was clicked
-  @Column("uuid")
-  rewardId!: string;
-
   // Copied from the reward at time of transaction
   // earned = stars added, redeemed = stars subtracted
   @Column({
@@ -43,10 +35,6 @@ export class Transaction {
   // type determines if it adds or subtracts
   @Column("integer")
   points!: number;
-
-  // Which staff member clicked the reward
-  @Column("uuid")
-  createdById!: string;
 
   // Many transactions belong to one participant profile
   @ManyToOne(
