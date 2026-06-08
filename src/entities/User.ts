@@ -8,16 +8,15 @@ import {
   OneToMany,
 } from "typeorm";
 import { OrganizationMembership } from "./OrganizationMembership";
+import { Transaction } from "./Transaction";
 
 @Entity("users")
 export class User {
-  // Auto-Gen UUID
   @PrimaryColumn("uuid")
   @Generated("uuid")
   id!: string;
 
-  //Cognito sub - linking the user to the cognito acc
-  @Column("varchar", { unique: true })
+  @Column("varchar", { nullable: true, unique: true })
   cognitoSub?: string;
 
   @Column("varchar")
@@ -29,13 +28,19 @@ export class User {
   @Column("varchar", { unique: true })
   email!: string;
 
-  // The relationship to OrganizationMembership (Organization_User in ERD diagram)
-  // one user can have many memberships (for mvp it was just one needed but this also future proofs it without any crazy overhead)
+  // One user can have many org memberships
   @OneToMany(
     () => OrganizationMembership,
     (membership: OrganizationMembership) => membership.user,
   )
   memberships!: OrganizationMembership[];
+
+  // One staff member can create many transactions
+  @OneToMany(
+    () => Transaction,
+    (transaction: Transaction) => transaction.createdBy,
+  )
+  transactions!: Transaction[];
 
   @CreateDateColumn()
   createdAt!: Date;

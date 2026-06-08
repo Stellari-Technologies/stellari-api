@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { OrganizationMembership } from "./OrganizationMembership";
 import { Reward } from "./Reward";
+import { ParticipantProfile } from "./ParticipantProfile";
 
 @Entity("organizations")
 export class Organization {
@@ -32,6 +33,13 @@ export class Organization {
   // One organization has many rewards
   @OneToMany(() => Reward, (reward: Reward) => reward.organization)
   rewards!: Reward[];
+
+  // One organization has many participant profiles
+  @OneToMany(
+    () => ParticipantProfile,
+    (participantProfile: ParticipantProfile) => participantProfile.organization,
+  )
+  participantProfiles!: ParticipantProfile[];
 
   @CreateDateColumn()
   createdAt!: Date;
