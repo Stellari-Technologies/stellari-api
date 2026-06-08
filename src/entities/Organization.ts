@@ -8,6 +8,7 @@ import {
   OneToMany,
 } from "typeorm";
 import { OrganizationMembership } from "./OrganizationMembership";
+import { Reward } from "./Reward";
 
 @Entity("organizations")
 export class Organization {
@@ -21,12 +22,16 @@ export class Organization {
   @Column("varchar")
   organizationType!: string;
 
-  // One organization has many memberships (staff and account owners)
+  // One organization has many memberships
   @OneToMany(
     () => OrganizationMembership,
     (membership: OrganizationMembership) => membership.organization,
   )
   memberships!: OrganizationMembership[];
+
+  // One organization has many rewards
+  @OneToMany(() => Reward, (reward: Reward) => reward.organization)
+  rewards!: Reward[];
 
   @CreateDateColumn()
   createdAt!: Date;
