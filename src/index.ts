@@ -210,6 +210,47 @@ const authRouter = express.Router();
 authRouter.post("/setup", requireAuth, authController.setup);
 
 app.use("/api/v1/auth", authRouter);
+
+// ─── Participant Routes ───────────────────────────────────────────────────────
+import { ParticipantController } from "./controllers/participant.controller";
+import { requireOrgAccess } from "./middleware/auth.middleware";
+
+const participantController = new ParticipantController();
+const participantRouter = express.Router({ mergeParams: true });
+
+participantRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  participantController.create,
+);
+participantRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  participantController.findAll,
+);
+participantRouter.get(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.findById,
+);
+participantRouter.put(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.update,
+);
+participantRouter.delete(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.delete,
+);
+
+app.use("/api/v1/:orgId/participants", participantRouter);
+
 /**
  * ============================================================================
  * ERROR HANDLERS
