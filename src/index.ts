@@ -199,7 +199,11 @@ app.get("/health", (req: Request, res: Response) => {
 //
 // ─── Auth Routes ─────────────────────────────────────────────────────────────
 import { AuthController } from "./controllers/auth.controller";
-import { requireAuth } from "./middleware/auth.middleware";
+import {
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+} from "./middleware/auth.middleware";
 
 const authController = new AuthController();
 const authRouter = express.Router();
@@ -213,7 +217,6 @@ app.use("/api/v1/auth", authRouter);
 
 // ─── Participant Routes ───────────────────────────────────────────────────────
 import { ParticipantController } from "./controllers/participant.controller";
-import { requireOrgAccess } from "./middleware/auth.middleware";
 
 const participantController = new ParticipantController();
 const participantRouter = express.Router({ mergeParams: true });

@@ -130,6 +130,7 @@ import { OrganizationMembership } from "../entities/OrganizationMembership";
 import { ParticipantProfile } from "../entities/ParticipantProfile";
 import { Reward } from "../entities/Reward";
 import { Transaction } from "../entities/Transaction";
+import { Activity } from "../entities/Activity";
 
 /**
  * ENTITIES ARRAY
@@ -148,6 +149,7 @@ const entities = [
   Organization,
   OrganizationMembership,
   ParticipantProfile,
+  Activity,
   Reward,
   Transaction,
 ];

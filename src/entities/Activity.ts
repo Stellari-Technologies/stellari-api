@@ -12,38 +12,44 @@ import {
 import { Organization } from "./Organization";
 import { Transaction } from "./Transaction";
 
-@Entity("rewards")
-export class Reward {
+@Entity("activities")
+export class Activity {
   @PrimaryColumn("uuid")
   @Generated("uuid")
   id!: string;
 
+  // Which org this activity belongs to
   @Column("varchar")
   title!: string;
 
   @Column("text", { nullable: true })
   description?: string;
 
-  // How much currency this reward costs to redeem
+  // How much currency this activity generates when completed
   @Column("integer")
-  currencyCost!: number;
+  currencyValue!: number;
 
-  // owner can hide rewards
+  // true = can be completed many times (e.g. Top 3 in Blooket)
+  // false = one time only (e.g. White Belt Build)
+  @Column("boolean", { default: true })
+  isRepeatable!: boolean;
+
+  // owner can hide activities
   @Column("boolean", { default: true })
   isActive!: boolean;
 
-  // Many rewards belong to one organization
+  // Many activities belong to one organization
   @ManyToOne(
     () => Organization,
-    (organization: Organization) => organization.rewards,
+    (organization: Organization) => organization.activities,
   )
   @JoinColumn({ name: "organization_id" })
   organization!: Organization;
 
-  // One reward can appear in many transactions
+  // One activity can appear in many transactions
   @OneToMany(
     () => Transaction,
-    (transaction: Transaction) => transaction.reward,
+    (transaction: Transaction) => transaction.activity,
   )
   transactions!: Transaction[];
 
