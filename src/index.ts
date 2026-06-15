@@ -254,6 +254,78 @@ participantRouter.delete(
 
 app.use("/api/v1/:orgId/participants", participantRouter);
 
+// ─── Reward Routes ────────────────────────────────────────────────────────────
+import { RewardController } from "./controllers/reward.controller";
+
+const rewardController = new RewardController();
+const rewardRouter = express.Router({ mergeParams: true });
+
+rewardRouter.post("/", requireAuth, requireOrgAccess, rewardController.create);
+rewardRouter.get("/", requireAuth, requireOrgAccess, rewardController.findAll);
+rewardRouter.get(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  rewardController.findById,
+);
+rewardRouter.put(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  rewardController.update,
+);
+rewardRouter.delete(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  rewardController.delete,
+);
+
+app.use("/api/v1/:orgId/rewards", rewardRouter);
+
+// ─── Activity Routes ──────────────────────────────────────────────────────────
+import { ActivityController } from "./controllers/activity.controller";
+
+const activityController = new ActivityController();
+const activityRouter = express.Router({ mergeParams: true });
+
+activityRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  activityController.create,
+);
+activityRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  activityController.findAll,
+);
+activityRouter.get(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  activityController.findById,
+);
+activityRouter.put(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  activityController.update,
+);
+activityRouter.delete(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  activityController.delete,
+);
+
+app.use("/api/v1/:orgId/activities", activityRouter);
+
 /**
  * ============================================================================
  * ERROR HANDLERS
