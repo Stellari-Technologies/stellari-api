@@ -326,6 +326,41 @@ activityRouter.delete(
 
 app.use("/api/v1/:orgId/activities", activityRouter);
 
+// ─── Transaction Routes ───────────────────────────────────────────────────────
+import { TransactionController } from "./controllers/transaction.controller";
+
+const transactionController = new TransactionController();
+const transactionRouter = express.Router({ mergeParams: true });
+
+// complete an activity → earn currency
+transactionRouter.post(
+  "/activity",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.completeActivity,
+);
+
+// redeem a reward → spend currency
+transactionRouter.post(
+  "/reward",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.redeemReward,
+);
+
+// get transaction history + balance
+transactionRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.getHistory,
+);
+
+app.use(
+  "/api/v1/:orgId/participants/:participantId/transactions",
+  transactionRouter,
+);
+
 /**
  * ============================================================================
  * ERROR HANDLERS
