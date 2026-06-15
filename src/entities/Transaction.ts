@@ -10,10 +10,12 @@ import {
 import { Reward } from "./Reward";
 import { User } from "./User";
 import { ParticipantProfile } from "./ParticipantProfile";
+import { Activity } from "./Activity";
 
 export enum TransactionType {
   EARNED = "earned",
   REDEEMED = "redeemed",
+  ADJUSTED = "adjusted",
 }
 
 @Entity("transactions")
@@ -22,21 +24,17 @@ export class Transaction {
   @Generated("uuid")
   id!: string;
 
-  // Copied from the reward at time of transaction
-  // earned = stars added, redeemed = stars subtracted
   @Column({
     type: "enum",
     enum: TransactionType,
   })
   type!: TransactionType;
 
-  // Copied from the reward at time of transaction
-  // always stored as positive number
-  // type determines if it adds or subtracts
+  // positive for earned, negative for redeemed
   @Column("integer")
-  points!: number;
+  amount!: number;
 
-  // Many transactions belong to one participant profile
+  // Many transactions belong to one participant
   @ManyToOne(
     () => ParticipantProfile,
     (participantProfile: ParticipantProfile) => participantProfile.transactions,
@@ -44,12 +42,21 @@ export class Transaction {
   @JoinColumn({ name: "participant_profile_id" })
   participantProfile!: ParticipantProfile;
 
-  // Many transactions reference one reward
-  @ManyToOne(() => Reward, (reward: Reward) => reward.transactions)
-  @JoinColumn({ name: "reward_id" })
-  reward!: Reward;
+  // Set when type = earned — which activity triggered this
+  @ManyToOne(() => Activity, (activity: Activity) => activity.transactions, {
+    nullable: true,
+  })
+  @JoinColumn({ name: "activity_id" })
+  activity?: Activity;
 
-  // Many transactions created by one user (staff member)
+  // Set when type = redeemed — which reward was redeemed
+  @ManyToOne(() => Reward, (reward: Reward) => reward.transactions, {
+    nullable: true,
+  })
+  @JoinColumn({ name: "reward_id" })
+  reward?: Reward;
+
+  // Which staff member created this transaction
   @ManyToOne(() => User, (user: User) => user.transactions)
   @JoinColumn({ name: "created_by" })
   createdBy!: User;
