@@ -361,6 +361,38 @@ app.use(
   transactionRouter,
 );
 
+// ─── Staff Routes ─────────────────────────────────────────────────────────────
+import { StaffController } from "./controllers/staff.controller";
+
+const staffController = new StaffController();
+const staffRouter = express.Router({ mergeParams: true });
+
+// only owner can create and delete staff
+// all members can view staff
+staffRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  staffController.create,
+);
+staffRouter.get("/", requireAuth, requireOrgAccess, staffController.findAll);
+staffRouter.get(
+  "/:userId",
+  requireAuth,
+  requireOrgAccess,
+  staffController.findById,
+);
+staffRouter.delete(
+  "/:userId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  staffController.delete,
+);
+
+app.use("/api/v1/:orgId/staff", staffRouter);
+
 /**
  * ============================================================================
  * ERROR HANDLERS
