@@ -99,7 +99,7 @@
 #
 # ============================================================================
 
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -111,11 +111,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: stellari_app
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -136,8 +136,15 @@ services:
       DB_NAME: stellari_app
       NODE_ENV: development
       PORT: 3000
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+      COGNITO_REGION: ${COGNITO_REGION}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - .:/app
       - /app/node_modules
@@ -155,9 +162,9 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
-      - '5050:80'
+      - "5050:80"
     depends_on:
       - postgres
     networks:

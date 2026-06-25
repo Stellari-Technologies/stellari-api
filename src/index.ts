@@ -393,6 +393,30 @@ staffRouter.delete(
 
 app.use("/api/v1/:orgId/staff", staffRouter);
 
+// ─── Invitation Routes ────────────────────────────────────────────────────────
+import { InviteController } from "./controllers/invite.controller";
+
+const inviteController = new InviteController();
+const inviteRouter = express.Router({ mergeParams: true });
+const publicInviteRouter = express.Router();
+
+// owner sends invite — requires auth + org access + owner
+inviteRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  inviteController.send,
+);
+
+app.use("/api/v1/:orgId/invitations", inviteRouter);
+
+// public routes — no auth needed (staff not logged in yet)
+publicInviteRouter.get("/:token", inviteController.getByToken);
+publicInviteRouter.post("/:token/accept", requireAuth, inviteController.accept);
+
+app.use("/api/v1/invitations", publicInviteRouter);
+
 /**
  * ============================================================================
  * ERROR HANDLERS

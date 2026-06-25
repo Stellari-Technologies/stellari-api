@@ -131,6 +131,7 @@ import { ParticipantProfile } from "../entities/ParticipantProfile";
 import { Reward } from "../entities/Reward";
 import { Transaction } from "../entities/Transaction";
 import { Activity } from "../entities/Activity";
+import { Invitation } from "../entities/Invitation";
 
 /**
  * ENTITIES ARRAY
@@ -152,6 +153,7 @@ const entities = [
   Activity,
   Reward,
   Transaction,
+  Invitation,
 ];
 /**
  * AppDataSource
