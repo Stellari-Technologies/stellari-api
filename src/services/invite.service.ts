@@ -5,34 +5,28 @@ import {
   OrganizationMembership,
   UserType,
 } from "../entities/OrganizationMembership";
+import { Organization } from "../entities/Organization";
 import { AppError } from "../middleware/error.middleware";
 import { HTTP_STATUS, ERROR_CODES } from "../constants";
 import { randomBytes } from "crypto";
-import {
-  CognitoIdentityProviderClient,
-  AdminCreateUserCommand,
-  AdminSetUserPasswordCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
-
-const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.COGNITO_REGION || "us-west-2",
-});
 
 export class InviteService {
   private invitationRepo = AppDataSource.getRepository(Invitation);
   private userRepo = AppDataSource.getRepository(User);
   private membershipRepo = AppDataSource.getRepository(OrganizationMembership);
+  private organizationRepo = AppDataSource.getRepository(Organization);
 
   /**
    * Send an invite to a staff member
-   * Creates an Invitation row and calls Cognito adminCreateUser()
+   * Generates a secure token and logs the invite link
+   * TODO: replace console.log with SES email when we set up SES
    */
   async sendInvite(
     organizationId: string,
     email: string,
     createdBy: User,
   ): Promise<Invitation> {
-    // check if already invited or already a member
+    // check if already invited
     const existingInvite = await this.invitationRepo.findOne({
       where: {
         email,
@@ -49,39 +43,19 @@ export class InviteService {
       );
     }
 
-    // generate unique token for the invite link
+    // get org name for the email
+    const organization = await this.organizationRepo.findOne({
+      where: { id: organizationId },
+    });
+
+    // generate unique secure token
     const token = randomBytes(32).toString("hex");
 
-    // set expiry to 7 days from now
+    // expires in 7 days
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // create Cognito account for staff
-    // Cognito will send them a temp password via email
-    try {
-      await cognitoClient.send(
-        new AdminCreateUserCommand({
-          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
-          Username: email,
-          UserAttributes: [
-            { Name: "email", Value: email },
-            { Name: "email_verified", Value: "true" },
-          ],
-          DesiredDeliveryMediums: ["EMAIL"],
-        }),
-      );
-    } catch (error: any) {
-      // if user already exists in Cognito that's okay
-      if (error.name !== "UsernameExistsException") {
-        throw new AppError(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          "Failed to create Cognito account for staff",
-          ERROR_CODES.INTERNAL_ERROR,
-        );
-      }
-    }
-
-    // create invitation row
+    // save invitation row
     const invitation = this.invitationRepo.create({
       email,
       token,
@@ -95,12 +69,30 @@ export class InviteService {
 
     await this.invitationRepo.save(invitation);
 
-    // log the invite link for now
-    // replace with SES email when available
+    // TODO: replace this with SES email when we set up SES
+    // The email should contain:
+    //   - org name
+    //   - invite link
+    //   - instructions to create account with the same email
     console.log(`
     ====================================
-    INVITE LINK FOR ${email}:
-    http://localhost:3000/api/v1/invitations/${token}/accept
+    INVITE EMAIL FOR: ${email}
+    ORG: ${organization?.organizationName}
+
+    Subject: You've been invited to join ${organization?.organizationName} on Stellari!
+
+    Body:
+    Hi there!
+
+    You've been invited to join ${organization?.organizationName} on Stellari.
+
+    Click the link below to create your account:
+    http://localhost:3000/invite/${token}
+
+    Use this email address to sign up: ${email}
+    This link expires in 7 days.
+
+    - The Stellari Team
     ====================================
     `);
 
@@ -109,7 +101,9 @@ export class InviteService {
 
   /**
    * Get invitation by token
-   * Used when staff clicks the invite link
+   * Called when staff clicks the invite link
+   * Returns org details so frontend can show
+   * "You've been invited to join X org"
    */
   async getByToken(token: string): Promise<Invitation> {
     const invitation = await this.invitationRepo.findOne({
@@ -146,8 +140,10 @@ export class InviteService {
 
   /**
    * Accept an invitation
-   * Called after staff logs in with their Cognito credentials
-   * Creates Users row and OrganizationMembership row
+   * Called after staff signs up via Cognito on the frontend
+   * Staff uses their own email and chosen password (no temp password)
+   * Frontend handles Cognito signUp() → confirmSignUp() → signIn()
+   * Then calls this endpoint with their JWT token
    */
   async acceptInvite(
     token: string,
