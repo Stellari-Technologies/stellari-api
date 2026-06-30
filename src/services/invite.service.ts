@@ -9,6 +9,12 @@ import { Organization } from "../entities/Organization";
 import { AppError } from "../middleware/error.middleware";
 import { HTTP_STATUS, ERROR_CODES } from "../constants";
 import { randomBytes } from "crypto";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+
+// ─── SES Client ──────────────────────────────────────────────────────────────
+const sesClient = new SESClient({
+  region: process.env.SES_REGION || "us-west-2",
+});
 
 export class InviteService {
   private invitationRepo = AppDataSource.getRepository(Invitation);
@@ -18,8 +24,7 @@ export class InviteService {
 
   /**
    * Send an invite to a staff member
-   * Generates a secure token and logs the invite link
-   * TODO: replace console.log with SES email when we set up SES
+   * Generates a secure token and sends invite email via SES
    */
   async sendInvite(
     organizationId: string,
@@ -69,41 +74,101 @@ export class InviteService {
 
     await this.invitationRepo.save(invitation);
 
-    // TODO: replace this with SES email when we set up SES
-    // The email should contain:
-    //   - org name
-    //   - invite link
-    //   - instructions to create account with the same email
-    console.log(`
-    ====================================
-    INVITE EMAIL FOR: ${email}
-    ORG: ${organization?.organizationName}
-
-    Subject: You've been invited to join ${organization?.organizationName} on Stellari!
-
-    Body:
-    Hi there!
-
-    You've been invited to join ${organization?.organizationName} on Stellari.
-
-    Click the link below to create your account:
-    http://localhost:3000/invite/${token}
-
-    Use this email address to sign up: ${email}
-    This link expires in 7 days.
-
-    - The Stellari Team
-    ====================================
-    `);
+    // send invite email via SES
+    try {
+      await this.sendInviteEmail(
+        email,
+        organization?.organizationName || "Stellari",
+        token,
+      );
+    } catch (error) {
+      // delete the invitation row so owner can retry
+      await this.invitationRepo.remove(invitation);
+      throw new AppError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Failed to send invitation email. Please try again.",
+        ERROR_CODES.INTERNAL_ERROR,
+      );
+    }
 
     return invitation;
   }
 
   /**
+   * Send invite email via AWS SES
+   */
+  private async sendInviteEmail(
+    toEmail: string,
+    orgName: string,
+    token: string,
+  ): Promise<void> {
+    const inviteUrl = `${process.env.FRONTEND_URL || "http://localhost:3001"}/invite/${token}`;
+
+    await sesClient.send(
+      new SendEmailCommand({
+        Source: process.env.SES_FROM_EMAIL || "rafay.abdrafay@stellari.ca",
+        Destination: {
+          ToAddresses: [toEmail],
+        },
+        Message: {
+          Subject: {
+            Data: `You've been invited to join ${orgName} on Stellari!`,
+            Charset: "UTF-8",
+          },
+          Body: {
+            Text: {
+              Data: `
+Hi there!
+
+You've been invited to join ${orgName} on Stellari.
+
+Click the link below to create your account and get started:
+${inviteUrl}
+
+Use this exact email address to sign up: ${toEmail}
+
+This link expires in 7 days.
+
+- The Stellari Team
+          `,
+              Charset: "UTF-8",
+            },
+            Html: {
+              Data: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #185FA5;">You've been invited to join ${orgName}!</h2>
+  <p>Hi there!</p>
+  <p>You've been invited to join <strong>${orgName}</strong> on Stellari.</p>
+  <p>Click the button below to create your account and get started:</p>
+  <a href="${inviteUrl}"
+     style="background-color: #185FA5; color: white; padding: 12px 24px;
+            text-decoration: none; border-radius: 4px; display: inline-block;
+            margin: 16px 0;">
+    Accept Invitation
+  </a>
+  <p style="color: #666; font-size: 14px;">
+    Use this exact email address to sign up: <strong>${toEmail}</strong>
+  </p>
+  <p style="color: #666; font-size: 14px;">This link expires in 7 days.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="color: #999; font-size: 12px;">- The Stellari Team</p>
+</body>
+</html>
+          `,
+              Charset: "UTF-8",
+            },
+          },
+        },
+      }),
+    );
+
+    console.log(`✅ Invite email sent to ${toEmail}`);
+  }
+
+  /**
    * Get invitation by token
-   * Called when staff clicks the invite link
-   * Returns org details so frontend can show
-   * "You've been invited to join X org"
    */
   async getByToken(token: string): Promise<Invitation> {
     const invitation = await this.invitationRepo.findOne({
@@ -140,10 +205,6 @@ export class InviteService {
 
   /**
    * Accept an invitation
-   * Called after staff signs up via Cognito on the frontend
-   * Staff uses their own email and chosen password (no temp password)
-   * Frontend handles Cognito signUp() → confirmSignUp() → signIn()
-   * Then calls this endpoint with their JWT token
    */
   async acceptInvite(
     token: string,
@@ -154,7 +215,6 @@ export class InviteService {
   ): Promise<{ user: User; membership: OrganizationMembership }> {
     const invitation = await this.getByToken(token);
 
-    // verify email matches invitation
     if (invitation.email !== email) {
       throw new AppError(
         HTTP_STATUS.FORBIDDEN,
@@ -163,7 +223,6 @@ export class InviteService {
       );
     }
 
-    // create or find user row
     let user = await this.userRepo.findOne({
       where: { cognitoSub },
     });
@@ -178,7 +237,6 @@ export class InviteService {
       await this.userRepo.save(user);
     }
 
-    // create organization membership
     const membership = this.membershipRepo.create({
       userType: UserType.STAFF,
       user,
@@ -186,7 +244,6 @@ export class InviteService {
     });
     await this.membershipRepo.save(membership);
 
-    // mark invitation as accepted
     invitation.status = InvitationStatus.ACCEPTED;
     invitation.acceptedAt = new Date();
     await this.invitationRepo.save(invitation);
