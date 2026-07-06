@@ -237,10 +237,12 @@ export const requireOrgAccess = async (
     const membership = await membershipRepository.findOne({
       where: {
         user: { cognitoSub: req.user!.cognitoSub },
+
         organization: { id: orgId },
       },
       relations: ["organization"],
     });
+
     if (!membership) {
       throw new AppError(
         HTTP_STATUS.FORBIDDEN,

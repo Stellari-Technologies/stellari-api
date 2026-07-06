@@ -28,7 +28,6 @@ export class Reward {
   @Column("integer")
   currencyCost!: number;
 
-  // owner can hide rewards
   @Column("boolean", { default: true })
   isActive!: boolean;
 

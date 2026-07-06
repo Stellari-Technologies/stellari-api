@@ -15,7 +15,10 @@ import { HTTP_STATUS, ERROR_CODES } from "../constants";
 interface SetupOrganizationInput {
   organizationName: string;
   organizationType: string;
+<<<<<<< HEAD
   currencyName?: string;
+=======
+>>>>>>> origin/main
 }
 
 export class AuthService {
@@ -78,7 +81,10 @@ export class AuthService {
     const organization = this.organizationRepository.create({
       organizationName: data.organizationName,
       organizationType: data.organizationType,
+<<<<<<< HEAD
       currencyName: data.currencyName || "Stars",
+=======
+>>>>>>> origin/main
     });
     await this.organizationRepository.save(organization);
 

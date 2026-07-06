@@ -35,6 +35,7 @@ export class Transaction {
   amount!: number;
 
   // Many transactions belong to one participant
+
   @ManyToOne(
     () => ParticipantProfile,
     (participantProfile: ParticipantProfile) => participantProfile.transactions,
@@ -57,6 +58,7 @@ export class Transaction {
   reward?: Reward;
 
   // Which staff member created this transaction
+
   @ManyToOne(() => User, (user: User) => user.transactions)
   @JoinColumn({ name: "created_by" })
   createdBy!: User;
