@@ -17,6 +17,12 @@ export enum UserType {
   STAFF = "staff",
 }
 
+export enum UserRole {
+  TEACHER = "teacher",
+  COORDINATOR = "coordinator",
+  ASSISTANT = "assistant",
+}
+
 @Entity("organization_memberships")
 export class OrganizationMembership {
   @PrimaryColumn("uuid")
@@ -28,6 +34,13 @@ export class OrganizationMembership {
     enum: UserType,
   })
   userType!: UserType;
+
+  @Column({
+    type: "enum",
+    enum: UserRole,
+    nullable: true,
+  })
+  userRole?: UserRole;
 
   @ManyToOne(() => User, (user) => user.memberships)
   @JoinColumn({ name: "user_id" })

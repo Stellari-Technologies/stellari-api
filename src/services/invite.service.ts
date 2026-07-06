@@ -4,6 +4,7 @@ import { User } from "../entities/User";
 import {
   OrganizationMembership,
   UserType,
+  UserRole,
 } from "../entities/OrganizationMembership";
 import { Organization } from "../entities/Organization";
 import { AppError } from "../middleware/error.middleware";
@@ -30,6 +31,7 @@ export class InviteService {
     organizationId: string,
     email: string,
     createdBy: User,
+    role?: UserRole,
   ): Promise<Invitation> {
     // check if already invited
     const existingInvite = await this.invitationRepo.findOne({
@@ -212,6 +214,7 @@ This link expires in 7 days.
     email: string,
     firstName: string,
     lastName: string,
+    role?: UserRole,
   ): Promise<{ user: User; membership: OrganizationMembership }> {
     const invitation = await this.getByToken(token);
 
@@ -239,6 +242,7 @@ This link expires in 7 days.
 
     const membership = this.membershipRepo.create({
       userType: UserType.STAFF,
+      userRole: role || undefined,
       user,
       organization: { id: invitation.organizationId },
     });

@@ -12,9 +12,14 @@ export class InviteController {
   send = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { orgId } = req.params;
-      const { email } = req.body;
+      const { email, role } = req.body;
 
-      const invitation = await this.service.sendInvite(orgId, email, req.user!);
+      const invitation = await this.service.sendInvite(
+        orgId,
+        email,
+        req.user!,
+        role,
+      );
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
@@ -63,7 +68,7 @@ export class InviteController {
   accept = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { token } = req.params;
-      const { firstName, lastName, email } = req.body; // ← add email here
+      const { firstName, lastName, email, role } = req.body; // ← add email here
 
       const result = await this.service.acceptInvite(
         token,
@@ -71,6 +76,7 @@ export class InviteController {
         email, // ← use email from body instead of req.user
         firstName,
         lastName,
+        role,
       );
 
       res.status(HTTP_STATUS.CREATED).json({
