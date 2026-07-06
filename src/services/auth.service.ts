@@ -15,10 +15,7 @@ import { HTTP_STATUS, ERROR_CODES } from "../constants";
 interface SetupOrganizationInput {
   organizationName: string;
   organizationType: string;
-<<<<<<< HEAD
   currencyName?: string;
-=======
->>>>>>> origin/main
 }
 
 export class AuthService {
@@ -28,32 +25,19 @@ export class AuthService {
     OrganizationMembership,
   );
 
-  /**
-   * setupOrganization
-   * Called after owner signs up via Cognito and verifies email.
-   * Creates the organization and links the owner to it.
-   *
-   * @param cognitoSub - the owner's Cognito sub from the verified JWT token
-   * @param email - the owner's email from the verified JWT token
-   * @param data - organization name and type from request body
-   */
   async setupOrganization(
     cognitoSub: string,
     email: string,
     data: SetupOrganizationInput,
   ) {
-    // Step 1 — check if this user already has an org
-    // they shouldn't be able to call setup twice
     const existingUser = await this.userRepository.findOne({
       where: { cognitoSub },
     });
 
     if (existingUser) {
-      // check if they already have a membership
       const existingMembership = await this.membershipRepository.findOne({
         where: { user: { id: existingUser.id } },
       });
-
       if (existingMembership) {
         throw new AppError(
           HTTP_STATUS.CONFLICT,
@@ -63,32 +47,24 @@ export class AuthService {
       }
     }
 
-    // Step 2 — create or find the user row
-    // user might not exist yet if this is their very first API call
     let user = existingUser;
-
     if (!user) {
       user = this.userRepository.create({
         cognitoSub,
         email,
-        firstName: "", // will be updated later in profile settings
+        firstName: "",
         lastName: "",
       });
       await this.userRepository.save(user);
     }
 
-    // Step 3 — create the organization
     const organization = this.organizationRepository.create({
       organizationName: data.organizationName,
       organizationType: data.organizationType,
-<<<<<<< HEAD
       currencyName: data.currencyName || "Stars",
-=======
->>>>>>> origin/main
     });
     await this.organizationRepository.save(organization);
 
-    // Step 4 — create the membership linking owner to org
     const membership = this.membershipRepository.create({
       userType: UserType.ACCOUNT_OWNER,
       user,
