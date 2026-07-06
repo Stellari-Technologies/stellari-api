@@ -16,7 +16,7 @@ export class AuthController {
    */
   setup = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { organizationName, organizationType } = req.body;
+      const { organizationName, organizationType, currencyName } = req.body;
 
       // req.user is set by requireAuth middleware
       // contains the verified Cognito user
@@ -26,6 +26,7 @@ export class AuthController {
       const result = await this.service.setupOrganization(cognitoSub, email, {
         organizationName,
         organizationType,
+        currencyName,
       });
 
       res.status(HTTP_STATUS.CREATED).json({
@@ -39,6 +40,7 @@ export class AuthController {
             id: result.organization.id,
             organizationName: result.organization.organizationName,
             organizationType: result.organization.organizationType,
+            currencyName: result.organization.currencyName,
           },
           membership: {
             id: result.membership.id,
