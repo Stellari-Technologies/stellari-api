@@ -411,7 +411,7 @@ inviteRouter.post(
 
 app.use("/api/v1/:orgId/invitations", inviteRouter);
 
-// public routes — no auth needed (staff not logged in yet)
+// public invite routes — GET is public, accept requires auth (staff must log in first)
 publicInviteRouter.get("/:token", inviteController.getByToken);
 publicInviteRouter.post("/:token/accept", requireAuth, inviteController.accept);
 
