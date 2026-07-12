@@ -240,7 +240,7 @@ This link expires in 7 days.
     }
 
     let user = await this.userRepo.findOne({
-      where: { cognitoSub },
+      where: [{ cognitoSub }, { email }],
     });
 
     if (!user) {
@@ -250,8 +250,21 @@ This link expires in 7 days.
         firstName,
         lastName,
       });
-      await this.userRepo.save(user);
+    } else {
+      if (user.cognitoSub && user.cognitoSub !== cognitoSub) {
+        throw new AppError(
+          HTTP_STATUS.CONFLICT,
+          "A user with this email already exists with a different identity",
+          ERROR_CODES.CONFLICT,
+        );
+      }
+
+      user.cognitoSub = cognitoSub;
+      user.firstName = firstName;
+      user.lastName = lastName;
     }
+
+    await this.userRepo.save(user);
 
     const membership = this.membershipRepo.create({
       userType: UserType.STAFF,
