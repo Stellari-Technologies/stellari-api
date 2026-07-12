@@ -172,6 +172,34 @@ export const requireAuth = async (
         console.error("Failed to fetch user email from Cognito:", error);
       }
 
+      if (!email) {
+        email =
+          (decoded.email as string) ||
+          (decoded["email"] as string) ||
+          (decoded["cognito:username"] as string) ||
+          "";
+      }
+
+      if (!email) {
+        throw new AppError(
+          HTTP_STATUS.UNAUTHORIZED,
+          "Email claim is required",
+          ERROR_CODES.UNAUTHORIZED,
+        );
+      }
+        });
+        const command = new AdminGetUserCommand({
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          Username: decoded.sub,
+        });
+        const cognitoUser = await cognitoClient.send(command);
+        email =
+          cognitoUser.UserAttributes?.find((attr) => attr.Name === "email")
+            ?.Value || "";
+      } catch (error) {
+        console.error("Failed to fetch user email from Cognito:", error);
+      }
+
       req.user = {
         id: "",
         cognitoSub: decoded.sub,
