@@ -55,6 +55,13 @@ export class InviteService {
       where: { id: organizationId },
     });
 
+    if (!organization) {
+      throw new AppError(
+        HTTP_STATUS.NOT_FOUND,
+        "Organization not found",
+        ERROR_CODES.NOT_FOUND,
+      );
+    }
     // generate unique secure token
     const token = randomBytes(32).toString("hex");
 
