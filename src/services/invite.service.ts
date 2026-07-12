@@ -242,6 +242,11 @@ This link expires in 7 days.
 
     const membership = this.membershipRepo.create({
       userType: UserType.STAFF,
+      // TODO: implement role assignment from invitation instead of accept request
+      // currently staff can self-select any role at acceptance time
+      // role should be set by the owner when sending the invite
+      // and stored on the invitation row, then applied here
+
       userRole: role || undefined,
       user,
       organization: { id: invitation.organizationId },
