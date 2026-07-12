@@ -105,10 +105,16 @@ export class InviteService {
     token: string,
   ): Promise<void> {
     const inviteUrl = `${process.env.FRONTEND_URL || "http://localhost:3001"}/invite/${token}`;
+    // fail fast if SES_FROM_EMAIL is not configured
+    // never fall back to a hardcoded email address
+    const fromEmail = process.env.SES_FROM_EMAIL;
+    if (!fromEmail) {
+      throw new Error("SES_FROM_EMAIL is not configured");
+    }
 
     await sesClient.send(
       new SendEmailCommand({
-        Source: process.env.SES_FROM_EMAIL || "rafay.abdrafay@stellari.ca",
+        Source: fromEmail,
         Destination: {
           ToAddresses: [toEmail],
         },
