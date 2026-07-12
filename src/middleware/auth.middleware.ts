@@ -38,6 +38,10 @@ import {
 } from "../entities/OrganizationMembership";
 import { AppError } from "./error.middleware";
 import { HTTP_STATUS, ERROR_CODES } from "../constants";
+import {
+  CognitoIdentityProviderClient,
+  AdminGetUserCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 
 // ─── Extend Express Request type ─────────────────────────────────────────────
 // This tells TypeScript that req.user and req.membership exist
@@ -140,29 +144,74 @@ export const requireAuth = async (
     }) as jwt.JwtPayload;
 
     // Step 5 — try to find user in database
-    // user may not exist yet if this is their first request (setup flow)
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: { cognitoSub: decoded.sub },
     });
 
-    // Step 6 — attach whatever we have to req
-    // setup endpoint will create the user row if it doesn't exist
-    // other endpoints will handle missing user as needed
-    req.user =
-      user ||
-      ({
+    // Step 6 — if user exists in DB use their email from DB
+    // if not fetch it from Cognito using adminGetUser()
+    if (user) {
+      req.user = user;
+    } else {
+      // fetch email from Cognito since access token doesn't include it
+      let email = "";
+      try {
+        const cognitoClient = new CognitoIdentityProviderClient({
+          region: process.env.COGNITO_REGION || "us-west-2",
+        });
+        const command = new AdminGetUserCommand({
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          Username: decoded.sub,
+        });
+        const cognitoUser = await cognitoClient.send(command);
+        email =
+          cognitoUser.UserAttributes?.find((attr) => attr.Name === "email")
+            ?.Value || "";
+      } catch (error) {
+        console.error("Failed to fetch user email from Cognito:", error);
+      }
+
+      if (!email) {
+        email =
+          (decoded.email as string) ||
+          (decoded["email"] as string) ||
+          (decoded["cognito:username"] as string) ||
+          "";
+      }
+
+      if (!email) {
+        throw new AppError(
+          HTTP_STATUS.UNAUTHORIZED,
+          "Email claim is required",
+          ERROR_CODES.UNAUTHORIZED,
+        );
+      }
+        });
+        const command = new AdminGetUserCommand({
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          Username: decoded.sub,
+        });
+        const cognitoUser = await cognitoClient.send(command);
+        email =
+          cognitoUser.UserAttributes?.find((attr) => attr.Name === "email")
+            ?.Value || "";
+      } catch (error) {
+        console.error("Failed to fetch user email from Cognito:", error);
+      }
+
+      req.user = {
         id: "",
         cognitoSub: decoded.sub,
-        email: decoded.email || decoded["cognito:username"] || "",
+        email,
         firstName: "",
         lastName: "",
         createdAt: new Date(),
         updatedAt: new Date(),
         memberships: [],
         transactions: [],
-      } as User);
-
+      } as User;
+    }
     next();
   } catch (error) {
     // if it's already an AppError pass it through
@@ -236,7 +285,8 @@ export const requireOrgAccess = async (
     );
     const membership = await membershipRepository.findOne({
       where: {
-        user: { id: req.user.id },
+        user: { cognitoSub: req.user!.cognitoSub },
+
         organization: { id: orgId },
       },
       relations: ["organization"],

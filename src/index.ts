@@ -199,7 +199,11 @@ app.get("/health", (req: Request, res: Response) => {
 //
 // ─── Auth Routes ─────────────────────────────────────────────────────────────
 import { AuthController } from "./controllers/auth.controller";
-import { requireAuth } from "./middleware/auth.middleware";
+import {
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+} from "./middleware/auth.middleware";
 
 const authController = new AuthController();
 const authRouter = express.Router();
@@ -210,6 +214,209 @@ const authRouter = express.Router();
 authRouter.post("/setup", requireAuth, authController.setup);
 
 app.use("/api/v1/auth", authRouter);
+
+// ─── Participant Routes ───────────────────────────────────────────────────────
+import { ParticipantController } from "./controllers/participant.controller";
+
+const participantController = new ParticipantController();
+const participantRouter = express.Router({ mergeParams: true });
+
+participantRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  participantController.create,
+);
+participantRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  participantController.findAll,
+);
+participantRouter.get(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.findById,
+);
+participantRouter.put(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.update,
+);
+participantRouter.delete(
+  "/:participantId",
+  requireAuth,
+  requireOrgAccess,
+  participantController.delete,
+);
+
+app.use("/api/v1/:orgId/participants", participantRouter);
+
+// ─── Reward Routes ────────────────────────────────────────────────────────────
+import { RewardController } from "./controllers/reward.controller";
+
+const rewardController = new RewardController();
+const rewardRouter = express.Router({ mergeParams: true });
+
+rewardRouter.post("/", requireAuth, requireOrgAccess, rewardController.create);
+rewardRouter.get("/", requireAuth, requireOrgAccess, rewardController.findAll);
+rewardRouter.get(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  rewardController.findById,
+);
+rewardRouter.put(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  rewardController.update,
+);
+rewardRouter.delete(
+  "/:rewardId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  rewardController.delete,
+);
+
+app.use("/api/v1/:orgId/rewards", rewardRouter);
+
+// ─── Activity Routes ──────────────────────────────────────────────────────────
+import { ActivityController } from "./controllers/activity.controller";
+
+const activityController = new ActivityController();
+const activityRouter = express.Router({ mergeParams: true });
+
+activityRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  activityController.create,
+);
+activityRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  activityController.findAll,
+);
+activityRouter.get(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  activityController.findById,
+);
+activityRouter.put(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  activityController.update,
+);
+activityRouter.delete(
+  "/:activityId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  activityController.delete,
+);
+
+app.use("/api/v1/:orgId/activities", activityRouter);
+
+// ─── Transaction Routes ───────────────────────────────────────────────────────
+import { TransactionController } from "./controllers/transaction.controller";
+
+const transactionController = new TransactionController();
+const transactionRouter = express.Router({ mergeParams: true });
+
+// complete an activity → earn currency
+transactionRouter.post(
+  "/activity",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.completeActivity,
+);
+
+// redeem a reward → spend currency
+transactionRouter.post(
+  "/reward",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.redeemReward,
+);
+
+// get transaction history + balance
+transactionRouter.get(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  transactionController.getHistory,
+);
+
+app.use(
+  "/api/v1/:orgId/participants/:participantId/transactions",
+  transactionRouter,
+);
+
+// ─── Staff Routes ─────────────────────────────────────────────────────────────
+import { StaffController } from "./controllers/staff.controller";
+
+const staffController = new StaffController();
+const staffRouter = express.Router({ mergeParams: true });
+
+// only owner can create and delete staff
+// all members can view staff
+staffRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  staffController.create,
+);
+staffRouter.get("/", requireAuth, requireOrgAccess, staffController.findAll);
+staffRouter.get(
+  "/:userId",
+  requireAuth,
+  requireOrgAccess,
+  staffController.findById,
+);
+staffRouter.delete(
+  "/:userId",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  staffController.delete,
+);
+
+app.use("/api/v1/:orgId/staff", staffRouter);
+
+// ─── Invitation Routes ────────────────────────────────────────────────────────
+import { InviteController } from "./controllers/invite.controller";
+
+const inviteController = new InviteController();
+const inviteRouter = express.Router({ mergeParams: true });
+const publicInviteRouter = express.Router();
+
+// owner sends invite — requires auth + org access + owner
+inviteRouter.post(
+  "/",
+  requireAuth,
+  requireOrgAccess,
+  requireOwner,
+  inviteController.send,
+);
+
+app.use("/api/v1/:orgId/invitations", inviteRouter);
+
+// public invite routes — GET is public, accept requires auth (staff must log in first)
+publicInviteRouter.get("/:token", inviteController.getByToken);
+publicInviteRouter.post("/:token/accept", requireAuth, inviteController.accept);
+
+app.use("/api/v1/invitations", publicInviteRouter);
+
 /**
  * ============================================================================
  * ERROR HANDLERS

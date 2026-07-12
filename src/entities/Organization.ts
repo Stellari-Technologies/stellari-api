@@ -10,6 +10,7 @@ import {
 import { OrganizationMembership } from "./OrganizationMembership";
 import { Reward } from "./Reward";
 import { ParticipantProfile } from "./ParticipantProfile";
+import { Activity } from "./Activity";
 
 @Entity("organizations")
 export class Organization {
@@ -23,18 +24,24 @@ export class Organization {
   @Column("varchar")
   organizationType!: string;
 
-  // One organization has many memberships
+  // The name of the currency used in this org
+  // e.g. "Stars", "Points", "Tokens", "XP"
+  // defaults to "Stars" if not set
+  @Column("varchar", { default: "Stars" })
+  currencyName!: string;
+
   @OneToMany(
     () => OrganizationMembership,
     (membership: OrganizationMembership) => membership.organization,
   )
   memberships!: OrganizationMembership[];
 
-  // One organization has many rewards
   @OneToMany(() => Reward, (reward: Reward) => reward.organization)
   rewards!: Reward[];
 
-  // One organization has many participant profiles
+  @OneToMany(() => Activity, (activity: Activity) => activity.organization)
+  activities!: Activity[];
+
   @OneToMany(
     () => ParticipantProfile,
     (participantProfile: ParticipantProfile) => participantProfile.organization,
