@@ -90,13 +90,18 @@ export class ParticipantService {
     data: UpdateParticipantInput,
   ): Promise<ParticipantProfile> {
     const participant = await this.findById(organizationId, participantId);
-
-    if (data.firstName) participant.firstName = data.firstName;
-    if (data.lastName) participant.lastName = data.lastName;
-    if (data.dateOfBirth) participant.dateOfBirth = new Date(data.dateOfBirth);
-    if (data.parentFirstName)
+    // using !== undefined checks instead of truthy checks
+    // allows clearing optional fields by passing empty string
+    if (data.firstName !== undefined) participant.firstName = data.firstName;
+    if (data.lastName !== undefined) participant.lastName = data.lastName;
+    if (data.dateOfBirth !== undefined)
+      participant.dateOfBirth = data.dateOfBirth
+        ? new Date(data.dateOfBirth)
+        : undefined;
+    if (data.parentFirstName !== undefined)
       participant.parentFirstName = data.parentFirstName;
-    if (data.parentLastName) participant.parentLastName = data.parentLastName;
+    if (data.parentLastName !== undefined)
+      participant.parentLastName = data.parentLastName;
 
     return await this.repo.save(participant);
   }
