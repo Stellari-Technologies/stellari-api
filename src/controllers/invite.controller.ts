@@ -68,12 +68,12 @@ export class InviteController {
   accept = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { token } = req.params;
-      const { firstName, lastName, email, role } = req.body; // ← add email here
-
+      const { firstName, lastName, role } = req.body; // ← email removed from body
+      const email = req.user!.email; // ← from verified Cognito token
       const result = await this.service.acceptInvite(
         token,
         req.user!.cognitoSub!,
-        email, // ← use email from body instead of req.user
+        email,
         firstName,
         lastName,
         role,
