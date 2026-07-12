@@ -104,6 +104,9 @@ export class TransactionService {
 
     // Step 5 — calculate new balance
     const newBalance = await this.getBalance(participantId);
+    // Step 6 — cache balance on participant profile
+    participant.pointsBalance = newBalance;
+    await this.participantRepo.save(participant);
 
     return { transaction, newBalance };
   }
@@ -176,6 +179,9 @@ export class TransactionService {
 
     // Step 5 — calculate new balance
     const newBalance = await this.getBalance(participantId);
+    // Step 6 — cache balance on participant profile
+    participant.pointsBalance = newBalance;
+    await this.participantRepo.save(participant);
 
     return { transaction, newBalance };
   }
