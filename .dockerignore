@@ -24,10 +24,8 @@ npm-debug.log
 dist
 
 # Source files (not needed in production Docker image)
-src
 
 # Configuration files (only needed for development/build)
-tsconfig.json
 jest.config.json
 .eslintrc.json
 
