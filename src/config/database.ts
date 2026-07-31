@@ -176,6 +176,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || "stellari_app",
   synchronize: process.env.NODE_ENV !== "production",
   logging: process.env.NODE_ENV !== "production",
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   entities,
   migrations: ["src/migrations/*.ts"],
   subscribers: ["src/subscribers/*.ts"],
